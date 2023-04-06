@@ -1,0 +1,852 @@
+1.package CNLAB_prgrm;
+import java.util.*;
+public class Bellman_ford {
+    int nv;
+    int distance[];
+    static final int max_val=999;
+    Bellman_ford(int nv){
+        this.nv=nv;
+        distance = new int[nv+1];
+    }
+    void bellman_evaluation(int source,int am[][]){
+        for(int node=1;node<=nv;node++){
+         distance[node]=max_val;
+        }
+        distance[source]=0;
+        for(int node =1;node<=nv-1;node++) {
+            for (int snode = 1; snode <= nv; snode++) {
+                for (int dnode = 1; dnode <= nv; dnode++) {
+                    if (am[snode][dnode] != max_val) {
+                        if (distance[dnode] > distance[snode] + am[snode][dnode]) {
+                            distance[dnode] = distance[snode] + am[snode][dnode];
+                        }
+                    }
+                }
+            }
+            for (int snode = 1; snode <= nv; snode++) {
+                for (int dnode = 1; dnode <= nv; dnode++) {
+                    if (am[snode][dnode] != max_val) {
+                        if (distance[dnode] > distance[snode] + am[snode][dnode]) {
+                            System.out.println("matrix contains negative edge cycle");
+                        }
+                    }
+                }
+            }
+
+        }
+        for (int vertex = 1; vertex <= nv; vertex++) {
+            System.out.println("The distance of source " + source + "to " + vertex + " is " + distance[vertex]);
+        }
+    }
+
+    public static void main(String[]args){
+        int nv=0;
+        int source;
+        int am[][];
+        Scanner sc=new Scanner(System.in);
+        System.out.println("Enter the number of vertex");
+        nv=sc.nextInt();
+        am= new int[nv+1][nv+1];
+        System.out.println("Enter the adjacency matrix :");
+        for(int i=1;i<=nv;i++){
+            for(int j=1;j<=nv;j++){
+                am[i][j]=sc.nextInt();
+                if(i==j){
+                    am[i][j]=0;
+                    continue;
+                }
+                if(am[i][j]==0){
+                    am[i][j]=max_val;
+                }
+            }
+        }
+        System.out.println("Enter the source vertex");
+        source=sc.nextInt();
+        Bellman_ford bf =new Bellman_ford( nv);
+        bf.bellman_evaluation(source,am);
+        sc.close();
+
+    }
+
+}
+
+
+*********************************************************************************************************************************************************
+
+
+2.>package CNLAB_prgrm;
+import java.io.*;
+import java.net.*;
+
+public class client_udp {
+    public static void main(String[] args)throws Exception{
+        BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
+        DatagramSocket clientsocket =new DatagramSocket();
+        InetAddress ipaddress =  InetAddress.getByName("localhost");
+
+        byte[] senddata = new byte[100];
+        byte[] receivedata =new byte[100];
+
+        while(true){
+            System.out.println("CLIENT : ");
+            String sentence = input.readLine();
+            senddata = sentence.getBytes();
+            DatagramPacket sendpacket = new DatagramPacket (senddata,senddata.length,ipaddress,3780);
+            clientsocket.send(sendpacket);
+
+            DatagramPacket receivepacket = new DatagramPacket (receivedata,receivedata.length);
+            clientsocket.receive(receivepacket);
+            String msentence = new String(receivepacket.getData());
+            System.out.println("SERVER : "+ msentence);
+          // clientsocket.close();
+        }
+    }
+}
+
+
+package CNLAB_prgrm;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.*;
+import java.util.*;
+import java.net.InetAddress;
+
+public class server_udp {
+    public static void main(String [] args) throws  Exception {
+        DatagramSocket serversocket = new DatagramSocket(3780);
+        BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
+        System.out.println("SERVER IS READY >>>>>>");
+        byte [] senddata =new byte[100];
+        byte [] receivedata =new byte[100];
+
+        while(true){
+            DatagramPacket receivepacket = new DatagramPacket(receivedata,receivedata.length);
+            serversocket.receive(receivepacket);
+            String sentence = new String(receivepacket.getData());
+            System.out.println("CLIENT : "+ sentence);
+
+            InetAddress ipaddress = receivepacket.getAddress();
+            int port = receivepacket.getPort();
+            System.out.println("SERVER : ");
+            String m = input.readLine();
+            senddata =m.getBytes();
+            DatagramPacket sendpacket = new DatagramPacket(senddata,senddata.length,ipaddress,port);
+            serversocket.send(sendpacket);
+        }
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+3.>Simulate a three nodes point to point network with duplex links between them. Set
+the queue size and vary the bandwidth and find the number of packets dropped.
+
+set ns [ new Simulator ]
+set tf [ open lab1.tr w ]
+$ns trace-all $tf
+set nf [ open lab1.nam w ]
+$ns namtrace-all $nf
+# The below code is used to create the nodes.
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+set n3 [$ns node]
+
+#This is used to give color to the packets.
+$ns color 1 "red"
+$ns color 2 "blue"
+$n0 label "Source/udp0"
+$n1 label "Source/udp1"
+
+
+$n2 label "Router"
+$n3 label "Destination/Null"
+
+#Vary the below Bandwidth and see the number of packets
+dropped.
+$ns duplex-link $n0 $n2 10Mb 300ms DropTail
+$ns duplex-link $n1 $n2 10Mb 300ms DropTail
+
+
+$ns duplex-link $n2 $n3 1Mb 300ms DropTail
+
+#The below code is used to set the queue size b/w the nodes
+$ns set queue-limit $n0 $n2 10
+$ns set queue-limit $n1 $n2 10
+$ns set queue-limit $n2 $n3 5
+
+#The below code is used to attach an UDP agent to n0, UDP
+#agent to n1 and null agent to n3.
+set udp0 [new Agent/UDP]
+$ns attach-agent $n0 $udp0
+set cbr0 [new Application/Traffic/CBR]
+$cbr0 attach-agent $udp0
+set null3 [new Agent/Null]
+$ns attach-agent $n3 $null3
+
+set udp1 [new Agent/UDP]
+$ns attach-agent $n1 $udp1
+set cbr1 [new Application/Traffic/CBR]
+$cbr1 attach-agent $udp1
+
+#The below code sets the udp0 packets to red and udp1
+#packets to blue color
+$udp0 set class_ 1
+$udp1 set class_ 2
+
+#The below code is used to connect the agents.
+$ns connect $udp0 $null3
+$ns connect $udp1 $null3
+#The below code is used to set the packet size to 500
+
+$cbr1 set packetSize_ 500Mb
+
+#The below code is used to set the interval of the packets,
+#i.e., Data rate of the packets. if the data rate is high
+#then packets drops are high.
+$cbr1 set interval_ 0.005
+proc finish { } {
+global ns nf tf
+$ns flush-trace
+exec nam lab1.nam &
+close $tf
+close $nf
+exit 0
+}
+$ns at 0.1 "$cbr0 start"
+$ns at 0.1 "$cbr1 start"
+$ns at 10.0 "finish"
+$ns run
+AWK Script:
+BEGIN{
+#include<stdio.h>
+count=0;
+}
+{
+if($1=="d") #d stands for the packets drops.
+count++
+}
+END{
+printf("The Total no of Packets Dropped due to Congestion :
+%d\n\n", count)
+}
+Output:
+ns lab1.tcl
+awk –f lab1.awk lab1.tr
+The Total no of packets Dropped due to congestion:4560
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+4. Simulate an Ethernet LAN using n nodes and set multiple traffic nodes
+and plot congestion window for different sourece/destination.
+
+
+Program:
+set ns [new Simulator]
+
+set tf [open lab7.tr w]
+$ns trace-all $tf
+
+set nf [open lab7.nam w]
+$ns namtrace-all $nf
+
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+set n3 [$ns node]
+
+$ns make-lan "$n0 $n1 $n2 $n3" 10mb 10ms LL Queue/DropTail
+Mac/802_3
+
+set tcp0 [new Agent/TCP]
+$ns attach-agent $n0 $tcp0
+set ftp0 [new Application/FTP]
+$ftp0 attach-agent $tcp0
+set sink3 [new Agent/TCPSink]
+$ns attach-agent $n3 $sink3
+
+$ns connect $tcp0 $sink3
+set tcp2 [new Agent/TCP]
+$ns attach-agent $n2 $tcp2
+set ftp2 [new Application/FTP]
+$ftp2 attach-agent $tcp2
+
+set sink2 [new Agent/TCPSink]
+$ns attach-agent $n1 $sink1
+
+$ns connect $tcp2 $sink1
+
+######To trace the congestion window##########
+set file1 [open file1.tr w]
+$tcp0 attach $file1
+$tcp0 trace cwnd_
+$tcp0 set maxcwnd_ 10
+
+set file2 [open file2.tr w]
+$tcp2 attach $file2
+$tcp2 trace cwnd_
+
+proc finish { } {
+
+global nf tf ns
+$ns flush-trace
+exec nam lab7.nam &
+close $nf
+close $tf
+exit 0
+
+}
+
+$ns at 0.1 "$ftp0 start"
+$ns at 1.5 "$ftp0 stop"
+
+$ns at 2 "$ftp0 start"
+
+$ns at 3 "$ftp0 stop"
+$ns at 0.2 "$ftp2 start"
+$ns at 2 "$ftp2 stop"
+
+$ns at 2.5 "$ftp2 start"
+$ns at 4 "$ftp2 stop"
+$ns at 5.0 "finish"
+$ns run
+
+AWK Script:
+BEGIN{
+#include<stdio.h>
+}
+{
+if($6=="cwnd_")
+printf("%f \t %f \n", $1,$7);
+}
+END{
+puts "DONE"
+}
+
+
+To run:
+
+ns lab7.tcl
+awk –f lab7.awk file1.tr>tcp1
+awk –f lab7.awk file2.tr>tcp2
+xgraph –x “time” –y “convalue ” tcp1 tcp2
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+5.2. Implement transmission of ping messages/trace route over a network topology
+consisting of 6 nodes and find the number of packets dropped due to congestion.
+
+set ns [new Simulator]
+set tf [open lab2.tr w]
+$ns trace-all $tf
+set nf [open lab2.nam w]
+$ns namtrace-all $nf
+proc finish {} {
+global ns nf tf
+exec nam lab2.nam &
+$ns flush-trace
+close $tf
+close $nf
+exit 0
+}
+
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+set n3 [$ns node]
+set n4 [$ns node]
+set n5 [$ns node]
+set n6 [$ns node]
+
+$n0 label "Ping0"
+$n4 label "Ping4"
+$n5 label "Ping5"
+$n6 label "Ping6"
+$n2 label "Router"
+
+$ns color 1 "red"
+$ns color 2 "green"
+
+$ns duplex-link $n0 $n2 100Mb 300ms DropTail
+$ns duplex-link $n2 $n6 1Mb 300ms DropTail
+$ns duplex-link $n5 $n2 100Mb 300ms DropTail
+$ns duplex-link $n2 $n4 1Mb 300ms DropTail
+$ns duplex-link $n3 $n2 1Mb 300ms DropTail
+$ns duplex-link $n1 $n2 1Mb 300ms DropTail
+$ns queue-limit $n0 $n2 5
+$ns queue-limit $n2 $n6 2
+$ns queue-limit $n2 $n4 3
+$ns queue-limit $n5 $n2 5
+
+#The below code is used to connect between the ping agents #to the node n0, n4 , n5 and
+n6.
+set ping0 [new Agent/Ping]
+$ns attach-agent $n0 $ping0
+set ping4 [new Agent/Ping]
+$ns attach-agent $n4 $ping4
+set ping5 [new Agent/Ping]
+$ns attach-agent $n5 $ping5
+set ping6 [new Agent/Ping]
+$ns attach-agent $n6 $ping6
+$ping0 set packetSize_ 50000MB
+$ping0 set interval_ 0.0001
+$ping5 set packetSize_ 60000MB
+$ping5 set interval_ 0.00001
+$ping0 set class_ 1
+$ping5 set class_ 2
+$ns connect $ping0 $ping4
+
+$ns connect $ping5 $ping6
+#The below function is executed when the ping agent receives #a reply from the destination
+Agent/Ping instproc recv {from rtt} {
+$self instvar node_
+puts " The node [$node_ id] received a reply from $from with round trip time of $rtt"
+}
+#The below code makes the link down(failure) at 0.9 from n2 #to n6 and when the time
+becomes 1.5 the link between n2 to #n6 is enabled.
+$ns rtmodel-at 0.9 down $n2 $n6
+$ns rtmodel-at 1.5 up $n2 $n6
+$ns at 0.1 "$ping0 send"
+$ns at 0.2 "$ping0 send"
+$ns at 0.3 "$ping0 send"
+$ns at 0.4 "$ping0 send"
+$ns at 0.5 "$ping0 send"
+$ns at 0.6 "$ping0 send"
+$ns at 0.7 "$ping0 send"
+$ns at 0.8 "$ping0 send"
+$ns at 0.9 "$ping0 send"
+$ns at 1.0 "$ping0 send"
+$ns at 1.1 "$ping0 send"
+$ns at 1.2 "$ping0 send"
+$ns at 1.3 "$ping0 send"
+$ns at 1.4 "$ping0 send"
+$ns at 1.5 "$ping0 send"
+$ns at 1.6 "$ping0 send"
+$ns at 1.7 "$ping0 send"
+$ns at 1.8 "$ping0 send"
+$ns at 0.1 "$ping5 send"
+$ns at 0.2 "$ping5 send"
+$ns at 0.3 "$ping5 send"
+$ns at 0.4 "$ping5 send"
+$ns at 0.5 "$ping5 send"
+$ns at 0.6 "$ping5 send"
+$ns at 0.7 "$ping5 send"
+$ns at 0.8 "$ping5 send"
+$ns at 0.9 "$ping5 send"
+$ns at 1.0 "$ping5 send"
+$ns at 1.1 "$ping5 send"
+$ns at 1.2 "$ping5 send"
+$ns at 1.3 "$ping5 send"
+$ns at 1.4 "$ping5 send"
+$ns at 1.5 "$ping5 send"
+$ns at 1.6 "$ping5 send"
+$ns at 1.7 "$ping5 send"
+$ns at 1.8 "$ping5 send"
+$ns at 5.0 "finish"
+$ns run
+Awk Script:
+BEGIN {
+#include<stdio.h>
+count=0;
+}
+{
+If ($1=="d")
+count++
+
+}
+END {
+printf("The Total no of Packets Dropped due toCongestion:%d ", count)
+}
+Output:
+ns lab2.tcl
+awk –f lab2.awk lab2.tr
+The Total no of packets dropped due to
+congestion : 345
+
+
+,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,
+4. Implement simple ESS and with transmitting nodes in wire-less LAN by simulation 
+and determine the performance with respect to transmission of packets.
+
+set ns [new Simulator]
+set tf [open lab4.tr w]
+$ns trace-all $tf
+set topo [new Topography]
+$topo load_flatgrid 1000 1000
+set nf [open lab4.nam w]
+$ns namtrace-all-wireless $nf 1000 1000
+
+$ns node-config -adhocRouting DSDV \                         
+-llType LL \                                                                              {PATERN - L M I I P C P A T A R}
+-macType Mac/802_11 \
+-ifqType Queue/DropTail \
+-ifqLen 50 \
+-phyType Phy/WirelessPhy \
+-channelType Channel/WirelessChannel \
+-propType Propagation/TwoRayGround \
+-antType Antenna/OmniAntenna \
+-topoInstance $topo \
+-agentTrace ON \
+-routerTrace ON
+create-god 3
+set n0 [$ns node]
+set n1 [$ns node]
+set n2 [$ns node]
+$n0 label "tcp0"
+$n1 label "sink1/tcp1"
+$n2 label "sink2"
+$n0 set X_ 50
+$n0 set Y_ 50
+$n0 set Z_ 0
+$n1 set X_ 100
+$n1 set Y_ 100
+$n1 set Z_ 0
+$n2 set X_ 600
+$n2 set Y_ 600
+$n2 set Z_ 0
+$ns at 0.1 "$n0 setdest 50 50 15"
+$ns at 0.1 "$n1 setdest 100 100 25"
+$ns at 0.1 "$n2 setdest 600 600 25"
+set tcp0 [new Agent/TCP]
+$nsattach-agent$n0$tcp0
+set ftp0 [new Application/FTP]
+$nsattach-agent$n0$tcp0
+set ftp0 [new Application/FTP]
+$ftp0 attach-agent $tcp0
+set sink1 [new Agent/TCPSink]
+$ns attach-agent $n1 $sink1
+$ns connect $tcp0 $sink1
+set tcp1 [new Agent/TCP]
+$ns attach-agent $n1 $tcp1
+set ftp1 [new Application/FTP]
+$ftp1 attach-agent $tcp1
+set sink2 [new Agent/TCPSink]
+$ns attach-agent $n2 $sink2
+$ns connect $tcp1 $sink2
+$ns at 5 "$ftp0 start"
+$ns at 5 "$ftp1 start"
+$ns at 100 "$n1 setdest 550 550 15"
+$ns at 190 "$n1 setdest 70 70 15"
+proc finish { } {
+global ns nf tf
+$ns flush-trace
+exec nam lab4.nam &
+close $tf
+exit 0
+}
+$ns at 250 "finish"
+$ns run
+AWK file (Open a new editor using “vi command” and write awk file and save with 
+“.awk” extension)
+BEGIN{
+count1=0
+count2=0
+pack1=0
+pack2=0
+time1=0
+time2=0
+}
+{
+if($1= ="r"&& $3= ="_1_" && $4= ="AGT")
+{
+count1++
+pack1=pack1+$8
+time1=$2
+}
+if($1= ="r" && $3= ="_2_" && $4= ="AGT")
+{
+count2++
+pack2=pack2+$8
+time2=$2
+}
+}
+END{
+printf("The Throughput from n0 to n1: %f Mbps \n”, ((count1*pack1*8)/(time1*1000000))); 
+printf("The Throughput from n1 to n2: %f Mbps", ((count2*pack2*8)/(time2*1000000))); }
+
+
+.......................................////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+BFA:
+
+import java.net.*;
+import java.io.*;
+import java.util.*;
+public class bfa
+{
+	public static void main(String args[]) throws Exception
+	{
+		int n,maxx=999,s=0;
+		Scanner in = new Scanner(System.in);
+		System.out.print("Enter no. of nodes : ");
+		n=in.nextInt();
+		System.out.print("Enter source node : ");
+		s=in.nextInt();
+		System.out.print("Enter adj matrix : ");
+		int d[]=new int[n+1],adj[][]=new int[n+1][n+1];
+		for(int i=1;i<=n;i++)
+		{
+			d[i]=maxx;
+			for(int j=1;j<=n;j++)
+			{
+				adj[i][j]=in.nextInt();
+				if(i==j)
+					adj[i][j]=0;
+				if(adj[i][j]==0)
+					adj[i][j]=999;
+			}
+		}
+		d[s]=0;
+		for(int sn=1;sn<=n;sn++)
+		{
+			for(int dn=1;dn<=n;dn++)
+			{
+				if(d[dn]>(d[sn]+adj[sn][dn]))
+					d[dn]=d[sn]+adj[sn][dn];
+			}
+		}
+
+		for(int sn=1;sn<=n;sn++)
+			{
+				for(int dn=1;dn<=n;dn++)
+				{
+					if(d[dn]>(d[sn]+adj[sn][dn]))
+						{
+							System.out.println("The graph contains a -ve edge");
+							System.exit(0);
+						}
+				}
+			}
+for(int i=1;i<=n;i++)
+		{
+			System.out.println("Distance from "+s+" to "+i+" is "+d[i]);
+		}
+
+
+
+		
+	}
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+tcp:
+import java.net.*;
+import java.io.*;
+public class cli
+{
+	public static void main(String args[]) throws Exception
+	{
+		Socket sock = new Socket("127.0.0.1",4000);
+		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+		String fname=in.readLine(),str;
+	  InputStream istream = sock.getInputStream();
+	  OutputStream ostream = sock.getOutputStream();
+		BufferedReader ffname = new BufferedReader(new InputStreamReader(istream));
+		PrintWriter pw =  new PrintWriter(ostream,true);
+		pw.println(fname);
+		BufferedReader contentread = new BufferedReader(new FileReader(fname));
+		while((str=contentread.readLine())!=null)
+		{
+			pw.println(str);
+			System.out.println(str);
+		}
+	}
+}
+
+///////////////////////////////////////////////////
+
+import java.net.*;
+import java.io.*;
+public class ser
+{
+	public static void main(String args[]) throws Exception
+	{
+		ServerSocket sersock = new ServerSocket(4000);
+		System.out.println("Server Ready");
+		Socket sock = sersock.accept();
+		System.out.println("Connected");
+	  InputStream istream = sock.getInputStream();
+	  OutputStream ostream = sock.getOutputStream();
+		BufferedReader ffname = new BufferedReader(new InputStreamReader(istream));
+		String fname=ffname.readLine(),str;
+		System.out.println("File name is : "+fname);
+		PrintWriter pw =  new PrintWriter(ostream,true);
+		BufferedReader contentread = new BufferedReader(new FileReader(fname));
+		while((str=contentread.readLine())!=null)
+		{
+			pw.println(str);
+			System.out.println(str);
+		}
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////
+leaky bucket:
+
+import java.util.*;
+public class lbucket
+	{
+	public static int min(int m,int n)
+	{
+		if(m<n)
+		return m;
+		else 
+		return n;
+	}
+	public static void main(String args[])
+	{
+		int nsec,orate=0,bkt;
+		Scanner in = new Scanner(System.in);
+		System.out.println("Enter no. of sec");
+		nsec=in.nextInt();
+		System.out.println("Enter operation rate");
+		orate=in.nextInt();
+		System.out.println("Enter bucket size");
+		bkt=in.nextInt();
+		int pkt[]=new int[nsec];
+		for(int i=0;i<nsec;i++)
+		{
+			System.out.println("Enter packet entering at "+(i+1)+" sec : ");
+			pkt[i]=in.nextInt();
+		}
+		int sec,rec,sent,left,dropped,count;
+		sec=rec=sent=left=dropped=count=0;
+		System.out.println("sec\tRcv\tSnt\tlft\tdropped");
+		for(sec=0;sec<nsec;sec++)
+		{
+			dropped=0;
+			count=count+pkt[sec];
+			if(count>bkt)
+				{
+				dropped=count-bkt;
+				count=bkt;
+				}
+			sent=min(orate,count);
+			System.out.println(sec+"\t"+pkt[sec]+"\t"+sent+"\t"+(count-sent)+"\t"+dropped);
+			count=count-sent;
+		}
+		while(count!=0)
+		{sec++;
+			dropped=0;
+			if(count>bkt)
+				{
+				dropped=count-bkt;
+				count=bkt;
+				}
+			sent=min(orate,count);
+			System.out.println(sec+"\t"+0+"\t"+sent+"\t"+(count-sent)+"\t"+dropped);
+			count=count-sent;
+		}
+
+	}
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+RSA:
+
+import java.util.*;
+import java.io.*;
+public class rsa
+{
+	public static int gcd(int m,int n)
+		{
+			if(m<n)
+				{
+					int temp=m;
+					m=n;
+					n=temp;
+				}
+			while(n!=0)
+				{
+					int r=(int)m%n;
+					m=n;
+					n=r;
+				}
+			return (int)m;
+		}
+	public static void main(String args[]) throws Exception
+	{
+		int p,q,n,phi,e=0,d=0;
+		Scanner in = new Scanner(System.in);
+		System.out.println("Enter Message to be encrypted ");
+		BufferedReader bv = new BufferedReader(new InputStreamReader(System.in));
+		String m=bv.readLine();
+		int len=m.length();
+		int num[] = new int[len],enc[] = new int[len],dec[] = new int[len];
+		char msg[]=new char[len],msg1[]=new char[len];
+		for(int i=0;i<len;i++)
+		{
+				msg[i]=m.charAt(i);
+				num[i]=(int)msg[i];
+		}
+		System.out.println("Enter value of p and q");
+		p=in.nextInt();
+		q=in.nextInt();
+		n=p*q;
+		phi=(p-1)*(q-1);
+		for(int i=2;i<phi;i++)
+		{
+			if((gcd(i,phi))==1)
+			{
+				e=i;
+				break;
+		    }
+		}
+		for(int i=1;i<n;i++)
+		{
+			if(((i*e)-1)%phi==0)
+			{
+				d=i;
+				break;
+		    }
+		}
+		System.out.println("Public key : {"+e+","+n+"}");
+		System.out.println("Private key : {"+d+","+n+"}");
+		for(int i=0;i<len;i++)
+		{
+			enc[i]=1;
+			for(int j=0;j<e;j++)
+			enc[i]=enc[i]*num[i]%n;
+		}
+		for(int i=0;i<len;i++)
+		{
+			dec[i]=1;
+			for(int j=0;j<d;j++)
+			dec[i]=dec[i]*enc[i]%n;
+			msg1[i]=(char)dec[i];
+		}
+			System.out.println("\nDecrypted message is : ");
+		for(int i=0;i<len;i++)
+		{
+			System.out.print(msg1[i]);
+		}
+		System.out.println();
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
